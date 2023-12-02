@@ -1,15 +1,15 @@
-// Testing Github stuff
+
 /* Temporary exists to make use of the possible Calculations provided by Processing, giving
 each object its own PVector dosent want to work and they would share their PVectors*/
 PVector PlayerPosition, NewPlayerPosition, TEST, Temporary1, Temporary2; 
 
 /*
 This array keeps all the non position information of the player character and other important variables
-Score, Lifes, Bombs, Invulnerability Timer, Game Time
-
+Score, Lifes, Current Pattern, Invulnerability Timer, Game Time, Graze
+  0      1        2                  3                    4        5
 Game Time increments by one each frame, its used to create enemies at certain points in the level. 
 */
-int[] GameStats = new int[5];
+int[] GameStats = new int[6];
 
 
 
@@ -96,11 +96,9 @@ PImage[] SimpleBullets_Array_Sprites = new PImage[512];
 
 
 
-// 0    1    2    3     movement 4 focus 5 shoot 6 bomb
+// 0    1    2    3     movement 4 focus 5 shoot 6 bomb    BOmbs and Shooting are unused but are still left behind, because rewriting all the associated stuff would take too long
 // UP DOWN LEFT RIGHT |
 boolean[] KeyInput = new boolean[7];
-// Simple Type Bullets (Basic Circles with constant Velocity and size)
-//int SBulletsAmount = 1000;
 
 
 
@@ -112,6 +110,29 @@ Different timers
 int DoOnce = 1;
 int Clock120 = 0; // A timer that goes from 0 - 120 increments by 1 every frame
 int Clock20 = 0;
+
+// This function deals with the collission stuff, returns true if the player is hit and not immune
+public boolean Collision_Detection (float SB_Storage[],int BulletSize, int Position){
+  
+ Temporary1.x = SB_Storage[Position*BulletSize];
+ Temporary1.y = SB_Storage[Position*BulletSize + 1];
+ 
+  if( PlayerPosition.dist(Temporary1) < (SB_Storage[Position*BulletSize + 4] + 8) && SB_Storage[Position*BulletSize + 3] != 0){
+    GameStats[0] = GameStats[0] + 100; // 100 points given
+    GameStats[5]++; 
+ SB_Storage[Position*BulletSize + 3] = 0; // prevents being given points multiple times by the same bullet
+  }
+  
+  
+  if( PlayerPosition.dist(Temporary1) < (SB_Storage[Position*BulletSize + 4]) && GameStats[3] <= 0){
+    GameStats[3] = 70;  // Immunity timeer
+    GameStats[1]--;    // Lowering Life
+  return true;
+  }
+  
+ return false;
+
+}
 
 
 
@@ -225,7 +246,7 @@ public void SimpleBullets_Update(float SB_Storage[],int SB_Free[],int BulletSize
      SB_Storage[i*BulletSize + 1] = SB_Storage[i*BulletSize + 1] + SB_Storage[i*BulletSize + 7];  // new Y
      
        // Checks if the bullet is out of bounds and deletes it it is, it gets removed.  X coordinate > 846 / < 96  Y Coordinate > 932 / < 32
-     if((SB_Storage[i*BulletSize] < 96 || SB_Storage[i*BulletSize] > 846 || SB_Storage[i*BulletSize + 1] < 32 || SB_Storage[i*BulletSize + 1] > 932) && SB_Storage[i*BulletSize] != 0){
+     if((SB_Storage[i*BulletSize] < 48 || SB_Storage[i*BulletSize] > 648 || SB_Storage[i*BulletSize + 1] < 32 || SB_Storage[i*BulletSize + 1] > 732) && SB_Storage[i*BulletSize] != 0){
 
       SB_Storage[i*BulletSize] = 0;
 
@@ -235,10 +256,11 @@ public void SimpleBullets_Update(float SB_Storage[],int SB_Free[],int BulletSize
 }
 
    image( SimpleBullets_Array_Sprites[ int(SB_Storage[i * BulletSize + 2]) ],SB_Storage[i*BulletSize],SB_Storage[i*BulletSize+1]);      
-   /*
-   Calculating the Distance between the player and the Projectile
-   */
-  println(  PlayerPosition.x );
+
+   if(Collision_Detection(SB_Storage,BulletSize,i)){
+println("HIT");
+}
+
    
    break;
    
@@ -259,7 +281,7 @@ public void SimpleBullets_Update(float SB_Storage[],int SB_Free[],int BulletSize
     
          
        // Checks if the bullet is out of bounds and deletes it it is it gets removed.  X coordinate > 846 / < 96  Y Coordinate > 932 / < 32
-  if((SB_Storage[i*BulletSize] < 96 || SB_Storage[i*BulletSize] > 846 || SB_Storage[i*BulletSize + 1] < 32 || SB_Storage[i*BulletSize + 1] > 932) && SB_Storage[i*BulletSize] != 0){
+  if((SB_Storage[i*BulletSize] < 48 || SB_Storage[i*BulletSize] > 648 || SB_Storage[i*BulletSize + 1] < 32 || SB_Storage[i*BulletSize + 1] > 732) && SB_Storage[i*BulletSize] != 0){
 
     SB_Storage[i*BulletSize] = 0;
     SB_Free[SB_Free[0]+1] = i*BulletSize;
@@ -269,25 +291,10 @@ public void SimpleBullets_Update(float SB_Storage[],int SB_Free[],int BulletSize
 
   image( SimpleBullets_Array_Sprites[ int(SB_Storage[i * BulletSize + 2]) ],SB_Storage[i*BulletSize],SB_Storage[i*BulletSize+1]);  // Draws the Bullet on the X Y coordinates of the bullet
 
-   /*
-   Calculating the Distance between the player and the Projectile and determines if the player is hit and gives graze points
-   If the player is too close to the bullet, they get hit, if they are close but not too close, they get points once per bullet
-   */
-  Temporary1.x = SB_Storage[i*BulletSize];
-  Temporary1.y = SB_Storage[i*BulletSize + 1];
-  if( PlayerPosition.dist(Temporary1) < 20 ){
-  
-  }
-  
-  if( PlayerPosition.dist(Temporary1) < 32 && SB_Storage[i*BulletSize + 4] == 1){
-    GameStats[0] = GameStats[0] + 100; // 100 points given
- println("graze");
- println(GameStats[0]);
- SB_Storage[i*BulletSize + 4] = 0; // prevents being given points multiple times by the same bullet
- 
- 
- }
 
+if(Collision_Detection(SB_Storage,BulletSize,i)){
+println("HIT");
+}
 
 break; 
     
@@ -310,6 +317,7 @@ break;
    default:
    println("Unknown Function Identifier");
       print("At Position "); print(i*BulletSize+5); print(" ID : "); println(SB_Storage[i * BulletSize + 5]);
+      SB_Storage[i*BulletSize] = 0;  // Set x to 0 to remove the bullet
    break;
    
    }
@@ -425,12 +433,14 @@ void keyReleased(){
 
 
 void setup(){    // Fenster Größe
-  size (1280, 960);
+  size (1024, 768);
   PlayerPosition = new PVector(500,500);
   NewPlayerPosition = new PVector(500,500);
   
   Temporary1 = new PVector(0,0);
-  
+  GameStats[5] = 0;
+  GameStats[0] = 0;
+  GameStats[1] = 3;
        imageMode(CENTER);
        /*
        Loads all the used images (sprites) into memory. They are kept in the same array for ease of access
@@ -439,22 +449,10 @@ void setup(){    // Fenster Größe
   SimpleBullets_Array_Sprites[0] = Sprite;
    SimpleBullets_Array_Sprites[1] = loadImage("Basic Blue.png");   
    SimpleBullets_Array_Sprites[2] = loadImage("Basic Green.png");
-   
-   
-  SimpleBullets_Create(SimpleBullets_Array_Storage,SimpleBullets_Array_Free,14,450,200,0,5,6,2,0.2,0.2,0.1,0.01,12,13,14,15);
+   SimpleBullets_Array_Sprites[3] = loadImage("small red.png");   
     SimpleBullets_GetFree( SimpleBullets_Array_Storage , SimpleBullets_Array_Free , 2000, 14);
-    
-//    PrintArr(SimpleBullets_Array_Free,100);
+
   
-//SimpleBullets_Create(SimpleBullets_Array_Storage,SimpleBullets_Array_Free,14,250,250,0,5,6,1,1,1,0,0,12,13,14,15);
-
-//PrintArr(SimpleBullets_Array_Storage,28000);
-
-//SimpleBullets_Update(SimpleBullets_Array_Storage,SimpleBullets_Array_Free,14,2000);
-
-  SimpleBullets_Create(SimpleBullets_Array_Storage,SimpleBullets_Array_Free,14,300,300,0,0,0,2,1,0,0,0,12,13,14,5);
-  
- //  SimpleBullets_Create(SimpleBullets_Array_Storage,SimpleBullets_Array_Free,14,450,200,0,5,6,2,0.2,0.2,0.01,0.01,12,13,14,1);
   
  
   
@@ -466,62 +464,37 @@ void setup(){    // Fenster Größe
 
 
 
-
-
-
-
-
-
-
-
-
-
-
 void draw(){
   Clock120 = (Clock120+1)*int(Clock120<120);
   Clock20 = (Clock20+1)*int(Clock20<20);
 
-
-
-if(Clock120 == 0){
-for(float i = 0; i<6.2; i = i+0.2){
+if(Clock20 == 0){
+for(float i = 0; i<6.2; i = i+0.1){
 
   float xxx = cos(i) - sin(i);
   float yyy = sin(i) + cos(i);
   
-  SimpleBullets_Create(SimpleBullets_Array_Storage,SimpleBullets_Array_Free,14,300,300,2,2,1,2,  2*yyy,xxx,0,0,  12,13,14,5);
+  SimpleBullets_Create(SimpleBullets_Array_Storage,SimpleBullets_Array_Free,14,150,100,3,1,10,2,  2*yyy,2*xxx,-0.0008*yyy,-0.001*xxx,  12,13,14,5);
 }
 }
-if(Clock120 == 30){
-for(float i = 0.3; i<6.5; i = i+0.2){
+if(Clock20 == 10){
+for(float i = 0; i<6.2; i = i+0.1){
 
   float xxx = cos(i) - sin(i);
   float yyy = sin(i) + cos(i);
   
-  SimpleBullets_Create(SimpleBullets_Array_Storage,SimpleBullets_Array_Free,14,300,300,1,2,1,2,  2*yyy,xxx,0,0,  12,13,14,5);
-}
-}
-if(Clock120 == 60){
-for(float i = 0.7; i<6.7; i = i+0.2){
-
-  float xxx = cos(i) - sin(i);
-  float yyy = sin(i) + cos(i);
-  
-  SimpleBullets_Create(SimpleBullets_Array_Storage,SimpleBullets_Array_Free,14,300,300,0,2,1,2,  2*yyy,xxx,0,0,  12,13,14,5);
+  SimpleBullets_Create(SimpleBullets_Array_Storage,SimpleBullets_Array_Free,14,450,100,3,1,10,2,  2*yyy,2*xxx,-0.005*xxx,-0.0025*yyy,  12,13,14,5);
 }
 }
 
 
-for(int i = 0;i <500;i=i+1){
-//    SimpleBullets_Create(SimpleBullets_Array_Storage,SimpleBullets_Array_Free,1,2,3,4,5,6,7,8,9,10,11,12,13,14,15);
-}
 
     // Background for now
   fill(55,55,55);
  rect(0,0,1280,960);
       fill(150,150,150);
       // Area
- rect(96,32,750,900); 
+ rect(48,32,600,700); 
    fill(55,55,150);
    
    
@@ -553,10 +526,18 @@ NewPlayerPosition.x = (((9-7*int(KeyInput[4])) *int(KeyInput[3]) -  (9-7*int(Key
   PlayerPosition.y = 32 * int(PlayerPosition.y <= 32) + 932 * int(PlayerPosition.y >= 932 );
   }
   
-
-
-
+  textSize(50);
+  fill(0,150,80);
+text("Score",760,50);
+text(GameStats[0],760,100);
+text("Graze",760,150);
+text(GameStats[5],760,200);
+text("Life",760,250);
+text(GameStats[1],760,300);
 SimpleBullets_Update(SimpleBullets_Array_Storage,SimpleBullets_Array_Free,14,2000);
-
-
+if(Clock20 == 0){
+GameStats[0] += 5;
+}
+//println(frameRate);
+GameStats[3]--;
 }
